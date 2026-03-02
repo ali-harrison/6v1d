@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Reset & Base ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: var(--font-barlow), sans-serif;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 2px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+}
+
+/* ─── Typography helpers ────────────────────────────────────── */
+.font-cormorant {
+  font-family: var(--font-cormorant), serif;
+}
+.font-barlow {
+  font-family: var(--font-barlow), sans-serif;
+}
+
+/* ─── Section label ─────────────────────────────────────────── */
+.section-label {
+  font-family: var(--font-barlow), sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.5;
+}
+
+/* ─── Easing custom prop ────────────────────────────────────── */
+:root {
+  --ease-premium: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* ─── Hero ──────────────────────────────────────────────────── */
+.hero-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+/* ─── Scroll indicator ──────────────────────────────────────── */
+.scroll-line {
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.8), transparent);
+  animation: scrollDrop 1.8s cubic-bezier(0.76, 0, 0.24, 1) infinite;
+}
+
+@keyframes scrollDrop {
+  0%   { transform: scaleY(0); transform-origin: top; opacity: 1; }
+  50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  100% { transform: scaleY(1); transform-origin: bottom; opacity: 0; }
+}
+
+/* ─── Card ──────────────────────────────────────────────────── */
+.card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: grayscale(100%);
+  transition: filter 0.6s var(--ease-premium);
+}
+
+.card:hover img {
+  filter: grayscale(0%);
+}
+
+/* Name watermark — large text behind the image, reveals on hover */
+.card-name-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: var(--font-barlow), sans-serif;
+  font-size: 10vw;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.10);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-premium);
+}
+.card:hover .card-name-bg {
+  opacity: 1;
+}
+
+/* Card overlay — sits above name watermark */
+.card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 2rem 1.5rem 1.5rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s var(--ease-premium), transform 0.5s var(--ease-premium);
+}
+.card:hover .card-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* SVG drawing brackets */
+.card-bracket {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+}
+.card-bracket--tl { top: 10px;    left: 10px;    }
+.card-bracket--br { bottom: 10px; right: 10px;   }
+
+.card-bracket path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  transition: stroke-dashoffset 0.45s var(--ease-premium);
+}
+/* Bottom-right bracket draws in slightly after the top-left */
+.card-bracket--br path {
+  transition-delay: 0.07s;
+}
+.card:hover .card-bracket path {
+  stroke-dashoffset: 0;
+}
+
+/* ─── Nav dots ──────────────────────────────────────────────── */
+.nav-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.4);
+  background: transparent;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.nav-dot.active {
+  background: #fff;
+  border-color: #fff;
+}
+
+/* ─── SVG line art ──────────────────────────────────────────── */
+.svg-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ─── Contact section ───────────────────────────────────────── */
+.contact-section {
+  background: #fff;
+  color: #000;
+}
+
+.contact-link {
+  font-family: var(--font-cormorant), serif;
+  font-size: clamp(1.5rem, 4vw, 3.5rem);
+  font-weight: 300;
+  font-style: italic;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  color: #000;
+  transition: opacity 0.3s ease;
+}
+
+.contact-link:hover {
+  opacity: 0.5;
+}
+
+/* ─── Mobile nav hide ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-dots-panel {
+    display: none;
+  }
+}
