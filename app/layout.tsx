@@ -16,10 +16,27 @@ const mono = Geist_Mono({
   display: "swap",
 });
 
+const title = "6v1d — Six Voices. One Direction.";
+const description =
+  "A personal inspirations page. Six people who shaped the creator's creativity and mindset.";
+
+// Icons and the share image come from app/icon.svg, apple-icon.png and opengraph-image.png
 export const metadata: Metadata = {
-  title: "6v1d — Six Voices. One Direction.",
-  description:
-    "A personal inspirations page. Six people who shaped the creator's creativity and mindset.",
+  metadataBase: new URL("https://6v1d.vercel.app"),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: "/",
+    siteName: "6v1d",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default function RootLayout({
