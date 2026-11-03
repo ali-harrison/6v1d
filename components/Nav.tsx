@@ -1,143 +1,150 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { EMAIL, NAV } from "@/data/site";
+import { lockScroll, scrollToId } from "@/lib/lenis";
+import { setSoundEnabled, useSoundEnabled } from "@/lib/sound";
+import Plus from "./ui/Plus";
 
-const sections = [
-  { id: "hero", label: "Hero" },
-  { id: "grid", label: "Grid" },
-  { id: "about", label: "About" },
-  { id: "contact", label: "Contact" },
-];
+function SoundToggle() {
+  const soundOn = useSoundEnabled();
+  return (
+    <button
+      type="button"
+      onClick={() => setSoundEnabled(!soundOn)}
+      aria-pressed={soundOn}
+      className={`flex items-center gap-2.5 text-[12px] font-semibold uppercase opacity-70 transition-opacity hover:opacity-100 aria-pressed:opacity-100 ${soundOn ? "sound-on" : ""}`}
+    >
+      <span className="flex h-3 items-end gap-[2px] text-orchid" aria-hidden="true">
+        <span className="sound-bar" />
+        <span className="sound-bar" />
+        <span className="sound-bar" />
+        <span className="sound-bar" />
+      </span>
+      Sound {soundOn ? "on" : "off"}
+    </button>
+  );
+}
 
 export default function Nav() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const observersRef = useRef<IntersectionObserver[]>([]);
+  const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
+  // Tuck the bar away while scrolling down, bring it back on any scroll up
   useEffect(() => {
-    // Disconnect previous observers
-    observersRef.current.forEach((o) => o.disconnect());
-    observersRef.current = [];
-
-    sections.forEach((section, i) => {
-      const el = document.getElementById(section.id);
-      if (!el) return;
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setActiveIndex(i);
-          }
-        },
-        { threshold: 0.4 }
-      );
-
-      observer.observe(el);
-      observersRef.current.push(observer);
-    });
-
-    return () => {
-      observersRef.current.forEach((o) => o.disconnect());
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 40);
+      setHidden(y > 160 && y > lastY);
+      lastY = y;
     };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+  useEffect(() => {
+    lockScroll(open);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const go = (id: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setOpen(false);
+    lockScroll(false);
+    scrollToId(id);
   };
 
   return (
     <>
-      {/* Top nav bar */}
-      <nav
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "1.5rem 3rem",
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)",
-        }}
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-transform duration-500 ease-premium ${
+          hidden && !open ? "-translate-y-full" : ""
+        }`}
       >
-        {/* Site name */}
-        <span
-          style={{
-            fontFamily: "var(--font-cormorant)",
-            fontWeight: 300,
-            fontSize: "1.1rem",
-            letterSpacing: "0.12em",
-            color: "#fff",
-          }}
+        <div
+          className={`gutter flex items-center justify-between py-4 transition-colors duration-500 md:py-5 ${
+            open ? "text-charcoal" : "text-lilac"
+          } ${scrolled && !open ? "bg-charcoal/85 backdrop-blur-md" : ""}`}
         >
-          6v1d
-        </span>
+          <a
+            href="#hero"
+            onClick={go("hero")}
+            aria-label="6v1d — back to top"
+            className={`logo-mask block h-[30px] w-[63px] transition-colors duration-500 md:h-[38px] md:w-[80px] ${open ? "bg-charcoal" : "bg-orchid"}`}
+          />
 
-        {/* Anchor links */}
-        <ul
-          style={{
-            display: "flex",
-            gap: "2.5rem",
-            listStyle: "none",
-          }}
-        >
-          {sections.map((section) => (
-            <li key={section.id}>
-              <button
-                onClick={() => scrollTo(section.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#fff",
-                  fontSize: "11px",
-                  letterSpacing: "0.15em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  opacity: 0.6,
-                  transition: "opacity 0.3s ease",
-                  fontFamily: "var(--font-barlow)",
-                  padding: 0,
-                }}
-                onMouseEnter={(e) =>
-                  ((e.target as HTMLButtonElement).style.opacity = "1")
-                }
-                onMouseLeave={(e) =>
-                  ((e.target as HTMLButtonElement).style.opacity = "0.6")
-                }
-              >
-                {section.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
+          <div className="flex items-center gap-6 md:gap-10">
+            <SoundToggle />
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-expanded={open}
+              aria-controls="site-menu"
+              className="flex items-center gap-3 text-[12px] font-semibold uppercase"
+            >
+              {open ? "Close" : "Menu"}
+              <span className={`transition-transform duration-500 ease-premium ${open ? "rotate-45 text-charcoal" : "text-orchid"}`}>
+                <Plus size={15} />
+              </span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-      {/* Right-edge section dots */}
       <div
-        className="nav-dots-panel"
-        style={{
-          position: "fixed",
-          right: "1.5rem",
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 100,
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.6rem",
-        }}
+        id="site-menu"
+        inert={!open}
+        className={`fixed inset-0 z-40 bg-lilac text-charcoal transition-[clip-path] duration-700 ease-premium ${
+          open ? "[clip-path:inset(0_0_0_0)]" : "[clip-path:inset(0_0_100%_0)]"
+        }`}
       >
-        {sections.map((section, i) => (
-          <button
-            key={section.id}
-            onClick={() => scrollTo(section.id)}
-            aria-label={`Go to ${section.label}`}
-            style={{ cursor: "pointer", background: "none", border: "none", padding: "4px" }}
-          >
-            <span className={`nav-dot${activeIndex === i ? " active" : ""}`} style={{ display: "block" }} />
-          </button>
-        ))}
+        <div className="gutter flex h-full flex-col justify-between overflow-y-auto pb-8 pt-24 md:pt-32">
+          <nav aria-label="Sections">
+            <ul className="border-t border-charcoal/15">
+              {NAV.map((item, i) => (
+                <li key={item.id}>
+                  <a
+                    href={`#${item.id}`}
+                    onClick={go(item.id)}
+                    className="group flex items-center justify-between border-b border-charcoal/15 py-3 md:py-4"
+                  >
+                    <span className="flex items-baseline gap-4 md:gap-8">
+                      <span className="eyebrow w-5">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="heading text-h1 transition-transform duration-500 ease-premium group-hover:translate-x-3">
+                        {item.label}
+                      </span>
+                    </span>
+                    <span className="grid h-[34px] w-[34px] place-items-center border border-orchid transition-colors group-hover:bg-orchid">
+                      <Plus size={9} className="plus-spin" />
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            <div>
+              <p className="eyebrow mb-3 text-charcoal/60">Enquiries</p>
+              <a href={`mailto:${EMAIL}`} className="draw-underline text-h5 font-medium">
+                {EMAIL}
+              </a>
+            </div>
+            <div>
+              <p className="eyebrow mb-3 text-charcoal/60">Based in</p>
+              <p className="text-h5 font-medium uppercase">Aotearoa New Zealand</p>
+            </div>
+            <div className="md:justify-self-end">
+              <p className="eyebrow mb-3 text-charcoal/60">Listen along</p>
+              <SoundToggle />
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Barlow } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import MarqueeBackground from "@/components/MarqueeBackground";
 
-const cormorant = Cormorant_Garamond({
+const sans = Geist({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
+  weight: ["400", "500", "600"],
+  variable: "--font-sans",
   display: "swap",
 });
 
-const barlow = Barlow({
+const mono = Geist_Mono({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  variable: "--font-barlow",
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -30,11 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${barlow.variable}`}>
-      <body>
-        <MarqueeBackground />
-        {children}
-      </body>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

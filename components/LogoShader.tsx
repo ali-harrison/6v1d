@@ -21,6 +21,8 @@ const frag = /* glsl */ `
   uniform float     uRepulseRadius;
   uniform float     uAssemble;   // 0 = fully scattered  →  1 = fully assembled
   uniform float     uScroll;     // 0 = normal           →  1 = fully dispersed
+  uniform vec2      uScale;      // canvas size ÷ displayed texture size (aspect-correct fit)
+  uniform vec3      uColor;      // dot colour
   varying vec2      vUv;
 
   // ── Bayer 4×4 ordered dither matrix (screen-space fixed grid) ────────────────
@@ -52,12 +54,15 @@ const frag = /* glsl */ `
   }
 
   void main() {
-    vec2 uv = vUv;
+    // Canvas UV → texture UV, centred and aspect-correct. All effects below
+    // work in texture space so the logo keeps its proportions at any viewport.
+    vec2 base = (vUv - 0.5) * uScale + 0.5;
+    vec2 uv   = base;
 
     // ── Assemble animation ────────────────────────────────────────────────────
     // Quantise the UV into a 24×24 grid so each "particle" is a small cluster
     // of pixels that share one consistent scatter vector and timing.
-    vec2 cell       = floor(vUv * 24.0) / 24.0;
+    vec2 cell       = floor(base * 24.0) / 24.0;
     vec2 cellCenter = cell + (0.5 / 24.0);   // centre of this cell — for distance calc
     vec2 rnd        = hash22(cell);
     vec2 scatter    = (rnd - 0.5) * 1.3;     // random offset range ±0.65 UV
@@ -76,7 +81,7 @@ const frag = /* glsl */ `
     // Each cell drifts outward in a direction that blends radial + noise,
     // creating organic dispersal rather than a uniform radial explosion.
     vec2 noiseDir = hash22(cell + 7.3) * 2.0 - 1.0;              // random per-cell
-    vec2 radial   = normalize(vUv - 0.5 + vec2(0.001));           // outward from centre
+    vec2 radial   = normalize(base - 0.5 + vec2(0.001));          // outward from centre
     vec2 driftDir = normalize(mix(radial, noiseDir, 0.55));        // blend: organic radial
     float scrollEase = uScroll * uScroll;                          // ease-in: gentle start
     uv += driftDir * scrollEase * 0.9;
@@ -88,6 +93,7 @@ const frag = /* glsl */ `
     }
 
     // ── Texture sample ────────────────────────────────────────────────────────
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.0); return; }
     vec4 tex = texture2D(uTexture, uv);
     if (tex.a < 0.01) { gl_FragColor = vec4(0.0); return; }
 
@@ -103,19 +109,40 @@ const frag = /* glsl */ `
     value *= 1.0 - uScroll * 0.75;
 
     if (value > threshold) {
-      gl_FragColor = vec4(1.0);
+      gl_FragColor = vec4(uColor, 1.0);
     } else {
       gl_FragColor = vec4(0.0);
     }
   }
 `
 
+// ─── Fit ──────────────────────────────────────────────────────────────────────
+// logo.png is 16:9 with the artwork occupying ~63% of its width. On wide
+// screens the texture spans the viewport width (artwork ≈ 63% wide); on narrow
+// screens it scales up so the artwork reaches ~90% of the width.
+const TEX_ASPECT = 1920 / 1080
+const ART_WIDTH  = 0.63
+
+function textureScale(cw: number, ch: number): [number, number] {
+  const t        = Math.min(Math.max((cw - 400) / 800, 0), 1)
+  const artFrac  = 0.9 + (ART_WIDTH - 0.9) * t
+  const texW     = Math.min((cw * artFrac) / ART_WIDTH, ch * 1.9)
+  const texH     = texW / TEX_ASPECT
+  return [cw / texW, ch / texH]
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace('#', ''), 16)
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 interface Props {
   src?: string
+  color?: string
 }
 
-export default function LogoShader({ src = '/logo.png' }: Props) {
+export default function LogoShader({ src = '/logo.png', color = '#ffffff' }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -145,6 +172,10 @@ export default function LogoShader({ src = '/logo.png' }: Props) {
         uRepulseRadius: { value: 0.06 },
         uAssemble:      { value: 0 },   // starts at 0 (scattered), animated to 1
         uScroll:        { value: 0 },   // driven by ScrollTrigger
+        uScale:         { value: new THREE.Vector2(1, 1) },
+        // Raw sRGB values — ShaderMaterial skips colour management, so a
+        // THREE.Color (stored linear) would render darker than the hex
+        uColor:         { value: new THREE.Vector3(...hexToRgb(color)) },
       },
       transparent: true,
       depthWrite:  false,
@@ -158,10 +189,12 @@ export default function LogoShader({ src = '/logo.png' }: Props) {
     const currentMouse = { x: 0.5, y: 0.5 }
     const parent = canvas.parentElement
 
+    // Mouse is mapped into the same texture space the shader samples in
     function onMouseMove(e: MouseEvent) {
-      const rect = canvas!.getBoundingClientRect()
-      targetMouse.x = (e.clientX - rect.left) / rect.width
-      targetMouse.y = 1.0 - (e.clientY - rect.top) / rect.height
+      const rect  = canvas!.getBoundingClientRect()
+      const scale = material.uniforms.uScale.value as THREE.Vector2
+      targetMouse.x = ((e.clientX - rect.left) / rect.width - 0.5) * scale.x + 0.5
+      targetMouse.y = (0.5 - (e.clientY - rect.top) / rect.height) * scale.y + 0.5
     }
     function onMouseLeave() { targetMouse.x = 0.5; targetMouse.y = 0.5 }
 
@@ -176,6 +209,7 @@ export default function LogoShader({ src = '/logo.png' }: Props) {
       const w = p ? p.clientWidth  : window.innerWidth
       const h = p ? p.clientHeight : window.innerHeight
       renderer.setSize(w, h, false)
+      material.uniforms.uScale.value.set(...textureScale(w, h))
     }
     resize()
     const ro = new ResizeObserver(resize)
@@ -216,11 +250,20 @@ export default function LogoShader({ src = '/logo.png' }: Props) {
       }
     })
 
-    // ── Animation loop ────────────────────────────────────────────────────────
+    // ── Animation loop — paused while the hero is off screen ──────────────────
     const timer = new THREE.Timer()
-    let raf: number
+    let raf = 0
+    let visible = true
+
+    const io = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting
+      cancelAnimationFrame(raf)
+      if (visible) animate()
+    })
+    io.observe(canvas)
 
     function animate() {
+      if (!visible) return
       raf = requestAnimationFrame(animate)
       timer.update()
       currentMouse.x += (targetMouse.x - currentMouse.x) * 0.08
@@ -234,6 +277,7 @@ export default function LogoShader({ src = '/logo.png' }: Props) {
     // ── Cleanup ───────────────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(raf)
+      io.disconnect()
       ro.disconnect()
       assembleTween?.kill()
       scrollST?.kill()
@@ -246,7 +290,7 @@ export default function LogoShader({ src = '/logo.png' }: Props) {
       loadedTexture?.dispose()
       renderer.dispose()
     }
-  }, [src])
+  }, [src, color])
 
   return (
     <canvas

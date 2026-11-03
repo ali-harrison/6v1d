@@ -1,9 +1,13 @@
 import LenisProvider from "@/components/LenisProvider";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
-import InspirationsGrid from "@/components/InspirationsGrid";
-import About from "@/components/About";
-import Contact from "@/components/Contact";
+import Intro from "@/components/Intro";
+import Voices from "@/components/Voices";
+import Approach from "@/components/Approach";
+import Manifesto from "@/components/Manifesto";
+import Words from "@/components/Words";
+import Principles from "@/components/Principles";
+import Closing from "@/components/Closing";
 
 export default function Home() {
   return (
@@ -11,9 +15,13 @@ export default function Home() {
       <Nav />
       <main>
         <Hero />
-        <InspirationsGrid />
-        <About />
-        <Contact />
+        <Intro />
+        <Voices />
+        <Approach />
+        <Manifesto />
+        <Words />
+        <Principles />
+        <Closing />
       </main>
     </LenisProvider>
   );
