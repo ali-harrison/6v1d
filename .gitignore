@@ -12,8 +12,6 @@ out/
 .env
 .env*.local
 
-# Claude session data
-.claude/
 
 # OS
 .DS_Store

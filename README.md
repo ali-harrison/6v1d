@@ -1,3 +1,5 @@
+![The 6v1d homepage, with a pixel-dithered logo on charcoal and the words Six Voices and One Direction behind it.](docs/screenshot.jpg)
+
 # 6v1d
 
 Six Voices. One Direction. A concept site about six people whose work shaped mine: J. Cole, Virgil Abloh, Michael Jackson, Pharrell Williams, Tame Iti and Stan Lee.
